@@ -19,7 +19,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegisterModel model)
     {
         if (!await _userService.RegisterAsync(model.Email, model.Username, model.Password))
-            return BadRequest("User with the same email or username already exists.");
+            return BadRequest("User with the same email already exists.");
 
         return Created("", new { Message = "Registration successful." });
     }
@@ -32,6 +32,6 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid username or password.");
 
         var token = _jwtService.GenerateToken(user);
-        return Ok(new { Token = token });
+        return Ok(new { user, Token = token });
     }
 }

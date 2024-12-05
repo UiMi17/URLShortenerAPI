@@ -9,6 +9,7 @@ namespace URLShortenerAPI.Data
             : base(options) { }
 
         public DbSet<UserModel> Users { get; set; }
+        public DbSet<UrlModel> Urls { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

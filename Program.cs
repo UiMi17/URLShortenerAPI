@@ -12,7 +12,6 @@ options.UseSqlite("Data Source=app.db"));
 
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<JwtService>();
-
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters
@@ -34,6 +33,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).
      };
  });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -44,6 +53,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 
