@@ -69,7 +69,7 @@ namespace URLShortenerAPI.Controllers
             var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
             var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (currentUserId != id && currentUserRole != "Admin")
+            if (currentUserId != urlToDelete.CreatedBy && currentUserRole != "Admin")
             {
                 return Forbid();
             }
