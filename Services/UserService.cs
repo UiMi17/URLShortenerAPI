@@ -15,6 +15,39 @@ public class UserService
         _passwordHasher = new PasswordHasher<UserModel>();
     }
 
+    public async Task SaveRefreshTokenAsync(int userId, string refreshToken)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) throw new Exception("User not found.");
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryDate = DateTime.UtcNow.AddDays(7); 
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<int?> ValidateRefreshTokenAsync(string refreshToken)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiryDate > DateTime.UtcNow);
+
+        if (user == null)
+            return null; 
+
+        return user.Id;
+    }
+
+    public async Task RemoveRefreshTokenAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            throw new Exception("User not found.");
+
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryDate = null;
+
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<bool> RegisterAsync(string email, string username, string password)
     {
         if (_context.Users.Any(u => u.Email == email))

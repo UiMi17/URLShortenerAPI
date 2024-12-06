@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using URLShortenerAPI.Data;
 using URLShortenerAPI.Models;
 using URLShortenerAPI.Services;
 
@@ -8,11 +11,13 @@ public class AuthController : ControllerBase
 {
     private readonly UserService _userService;
     private readonly JwtService _jwtService;
+    private readonly AppDbContext _context;
 
-    public AuthController(UserService userService, JwtService jwtService)
+    public AuthController(UserService userService, JwtService jwtService, AppDbContext dbcontext)
     {
         _userService = userService;
         _jwtService = jwtService;
+        _context = dbcontext;
     }
 
     [HttpPost("register")]
@@ -29,9 +34,45 @@ public class AuthController : ControllerBase
     {
         var user = await _userService.AuthenticateAsync(model.Email, model.Password);
         if (user == null)
-            return Unauthorized("Invalid username or password.");
+            return Unauthorized("Invalid email or password.");
 
         var token = _jwtService.GenerateToken(user);
-        return Ok(new { user, Token = token });
+        var refreshToken = _jwtService.GenerateRefreshToken();
+
+        await _userService.SaveRefreshTokenAsync(user.Id, refreshToken);
+
+        return Ok(new { user, Token = token, RefreshToken = refreshToken });
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value); ;
+        if (userId == null)
+            return Unauthorized("User not authorized.");
+
+        await _userService.RemoveRefreshTokenAsync(int.Parse(userId.ToString()));
+
+        return Ok(new { Message = "Logged out successfully." });
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenModel model)
+    {
+        var userId = await _userService.ValidateRefreshTokenAsync(model.RefreshToken);
+        if (userId == null)
+            return Unauthorized("Invalid refresh token.");
+
+        var user = await _context.Users.FindAsync(userId.Value);
+        if (user == null)
+            return Unauthorized("User not found.");
+
+        var token = _jwtService.GenerateToken(user);
+        var newRefreshToken = _jwtService.GenerateRefreshToken();
+
+        await _userService.SaveRefreshTokenAsync(user.Id, newRefreshToken);
+
+        return Ok(new { Token = token, RefreshToken = newRefreshToken });
     }
 }

@@ -17,5 +17,7 @@ namespace URLShortenerAPI.Models
         [Required]
         public string PasswordHash { get; set; }
         public UserRole Role { get; set; } = UserRole.User;
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryDate { get; set; }
     }
 }
